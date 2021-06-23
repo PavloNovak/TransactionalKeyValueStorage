@@ -108,12 +108,16 @@ public final class StorageService {
     }
 }
 
+/// Transactional key-value storage
 final class TransactionalStorage {
-    let transactionId: Int
-    private var storage: Dictionary = [:]
-    var nestedTransaction: TransactionalStorage?
     
-    var isCommited: Bool = false
+    /// Child transaction
+    public var nestedTransaction: TransactionalStorage?
+    /// Indicates whether transaction is commited
+    public var isCommited: Bool = false
+    
+    private let transactionId: Int
+    private var storage: Dictionary = [:]
     
     init(transacitonId: Int, isCommited: Bool = false) {
         self.transactionId = transacitonId
