@@ -11,20 +11,20 @@ struct ContentView: View {
     
     private var keyValueStorage = StorageService()
     
-    @State private var selectedCommand = Commands.set
-    @State var output: String = ""
-    @State var input: String = ""
-    @State var typing = false
+    @State private var selectedCommand = StorageService.Commands.set
+    @State private var output: String = ""
+    @State private var input: String = ""
+    @State private var isTyping = false
     
     var body: some View {
         VStack {
-            if !typing {
+            if !isTyping {
                 if !output.isEmpty {
                     Text("\(output)")
                 }
             }
             TextField("", text: $input, onEditingChanged: {
-                self.typing = $0
+                self.isTyping = $0
             }, onCommit: {
                 if output.last != "\n" {
                     output += "\n"
@@ -35,8 +35,8 @@ struct ContentView: View {
             .clipped()
             .textFieldStyle(RoundedBorderTextFieldStyle())
             
-            Picker("Command", selection: $selectedCommand) {
-                ForEach(Commands.allCases, id: \.self) {
+            Picker("", selection: $selectedCommand) {
+                ForEach(StorageService.Commands.allCases, id: \.self) {
                     Text($0.rawValue.uppercased())
                 }
             }
@@ -45,7 +45,7 @@ struct ContentView: View {
         }
     }
     
-    private func proceed(with command: Commands) {
+    private func proceed(with command: StorageService.Commands) {
         switch command {
         case .set:
             let dividedOutput = input.split(separator: " ")
