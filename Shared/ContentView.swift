@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     
-    private var keyValueStorage = TransactionalKeyValueStorage()
+    private var keyValueStorage = StorageService()
     
     @State private var selectedCommand = Commands.set
     @State var output: String = ""

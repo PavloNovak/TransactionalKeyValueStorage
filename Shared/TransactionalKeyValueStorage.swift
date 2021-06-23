@@ -21,10 +21,172 @@ enum Commands: String, CaseIterable {
     case rollback
 }
 
-/// This object represents transactional key value storage.
+/// This object gives an access to transactional key value storage
+public class StorageService {
+    
+    private var identifierOfParentTransactions: [Int]
+    
+    private var transactionalStorage: [TransactionalStorage]
+    
+    private var hasOngoingTransaction: Bool {
+        return !transactionalStorage[identifierOfParentTransactions.count].isCommited
+    }
+    
+    init() {
+        self.identifierOfParentTransactions = []
+        self.transactionalStorage = [TransactionalStorage(transacitonId: UUID().hashValue, isCommited: true)]
+    }
+    
+    /// Store the value for key into current transaction
+    public func set(_ key: String, _ value: String) {
+        if hasOngoingTransaction {
+            transactionalStorage[identifierOfParentTransactions.count].set(key, value)
+        }
+        transactionalStorage[0].set(key, value)
+    }
+    
+    /// Return the current value for key from current transaction
+    public func get(_ key: String) -> String? {
+        if hasOngoingTransaction {
+            return transactionalStorage[identifierOfParentTransactions.count].get(key)
+        }
+        return transactionalStorage[0].get(key)
+    }
+    
+    /// Remove the entry for key in current transaction
+    public func delete(_ key: String) {
+        if hasOngoingTransaction {
+            transactionalStorage[identifierOfParentTransactions.count].delete(key)
+        }
+        transactionalStorage[0].delete(key)
+    }
+    
+    /// Return the number of keys that have the given value
+    public func count(_ value: String) -> Int {
+        transactionalStorage
+            .map { $0.count(value) }
+            .reduce(0, +)
+    }
+    
+    /// Start a new transaction
+    public func begin() {
+        if hasOngoingTransaction {
+            transactionalStorage[identifierOfParentTransactions.count].begin()
+        } else {
+            if identifierOfParentTransactions.count == 1 {
+                let newTransactionalStorage = TransactionalStorage(transacitonId: UUID().hashValue)
+                transactionalStorage.append(newTransactionalStorage)
+                identifierOfParentTransactions.append(identifierOfParentTransactions.count + 1)
+                return
+            }
+        }
+    }
+    
+    /// Complete ongoing transaction
+    public func commit() -> String? {
+        guard hasOngoingTransaction else {
+            return "no transaction"
+        }
+        transactionalStorage[identifierOfParentTransactions.count].commit()
+        return nil
+    }
+    
+    /// Revert to state prior to BEGIN call
+    public func rollback() -> String? {
+        guard hasOngoingTransaction else {
+            return "no transaction"
+        }
+        
+        let currentTransaction = transactionalStorage[identifierOfParentTransactions.count]
+        if currentTransaction.nestedTransaction == nil, !currentTransaction.isCommited {
+            transactionalStorage.removeLast()
+            identifierOfParentTransactions.removeLast()
+            return nil
+        }
+        transactionalStorage[identifierOfParentTransactions.count].rollback()
+        
+        return nil
+    }
+}
+
+class TransactionalStorage {
+    let transactionId: Int
+    private var storage: Dictionary = [:]
+    var nestedTransaction: TransactionalStorage?
+    
+    var isCommited: Bool = false
+    
+    init(transacitonId: Int, isCommited: Bool = false) {
+        self.transactionId = transacitonId
+        self.isCommited = isCommited
+    }
+    
+    fileprivate func set(_ key: String, _ value: String) {
+        if let nestedTransaction = nestedTransaction, !nestedTransaction.isCommited {
+            nestedTransaction.set(key, value)
+        } else {
+            storage[key] = value
+        }
+    }
+    
+    fileprivate func get(_ key: String) -> String? {
+        if let nestedTransaction = nestedTransaction, !nestedTransaction.isCommited {
+            return nestedTransaction.get(key)
+        } else {
+            return storage[key]
+        }
+    }
+    
+    fileprivate func delete(_ key: String) {
+        if let nestedTransaction = nestedTransaction, !nestedTransaction.isCommited {
+            nestedTransaction.delete(key)
+        } else {
+            storage.removeValue(forKey: key)
+        }
+    }
+    
+    fileprivate func count(_ value: String) -> Int {
+        if let nestedTransaction = nestedTransaction {
+            return nestedTransaction.count(value)
+        } else {
+            return storage.values.filter{ $0 == value }.count
+        }
+    }
+    
+    fileprivate func begin() {
+        if let nestedTransaction = nestedTransaction {
+            nestedTransaction.begin()
+        } else {
+            nestedTransaction = TransactionalStorage(transacitonId: UUID().hashValue)
+        }
+    }
+    
+    fileprivate func commit() {
+        if let nestedTransaction = nestedTransaction, !nestedTransaction.isCommited {
+            nestedTransaction.commit()
+        } else {
+            isCommited = true
+        }
+    }
+    
+    fileprivate func rollback() {
+        if let nestedTransaction = nestedTransaction, !nestedTransaction.isCommited {
+            nestedTransaction.rollback()
+        } else {
+            nestedTransaction = nil
+        }
+    }
+}
+
+// MARK: - Deprecated v1.0
+
+/// This object represents transactional key value storage without nesting.
+/// It allows user to start a new transaction without closing existing one.
+@available(*, deprecated, message: "Use StorageService instead")
 public class TransactionalKeyValueStorage {
     
     private var transactionsIds: [(UInt, isCommited)] = []
+    
     private var transactionalStorage: [Int: Dictionary] = [-1: [:]]
     
     private var currentTransaction: (UInt, isCommited)? {
@@ -102,63 +264,5 @@ public class TransactionalKeyValueStorage {
         self.transactionalStorage[Int(currentTransactionId.0)]?.removeAll()
         transactionsIds.removeLast()
         return nil
-    }
-}
-
-/// V4
-public class StorageService {
-    
-    private static let genesisBlockValue = 0
-    
-    private var transactionalStorage = TransactionalStorage(transacitonId: StorageService.genesisBlockValue)
-    
-    /// Store the value for key into current transaction
-    public func set(_ key: String, _ value: String) {
-        transactionalStorage.set(key, value)
-    }
-    
-    /// Return the current value for key from current transaction
-    public func get(_ key: String) -> String? {
-        transactionalStorage.get(key)
-    }
-    
-    /// Remove the entry for key in current transaction
-    public func delete(_ key: String) {
-        transactionalStorage.delete(key)
-    }
-    
-    /// Return the number of keys that have the given value
-    public func count(_ value: String) -> Int {
-        transactionalStorage.count(value)
-    }
-}
-
-class TransactionalStorage {
-    let transactionId: Int
-    private var storage: Dictionary = [:]
-    var nextTransaction: TransactionalStorage?
-    
-    init(transacitonId: Int) {
-        self.transactionId = transacitonId
-    }
-    
-    fileprivate func set(_ key: String, _ value: String) {
-        storage[key] = value
-    }
-    
-    fileprivate func get(_ key: String) -> String? {
-        storage[key]
-    }
-    
-    fileprivate func delete(_ key: String) {
-        storage.removeValue(forKey: key)
-    }
-    
-    fileprivate func count(_ value: String) -> Int {
-        if let nextTransaction = nextTransaction {
-            return nextTransaction.count(value)
-        } else {
-            return storage.values.filter{ $0 == value }.count
-        }
     }
 }
