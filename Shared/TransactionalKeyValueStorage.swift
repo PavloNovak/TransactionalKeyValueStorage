@@ -41,22 +41,21 @@ public class StorageService {
     public func set(_ key: String, _ value: String) {
         if hasOngoingTransaction {
             transactionalStorage[identifierOfParentTransactions.count].set(key, value)
+            return
         }
         transactionalStorage[0].set(key, value)
     }
     
     /// Return the current value for key from current transaction
     public func get(_ key: String) -> String? {
-        if hasOngoingTransaction {
-            return transactionalStorage[identifierOfParentTransactions.count].get(key)
-        }
-        return transactionalStorage[0].get(key)
+        return transactionalStorage[identifierOfParentTransactions.count].get(key)
     }
     
     /// Remove the entry for key in current transaction
     public func delete(_ key: String) {
         if hasOngoingTransaction {
             transactionalStorage[identifierOfParentTransactions.count].delete(key)
+            return
         }
         transactionalStorage[0].delete(key)
     }
@@ -73,7 +72,7 @@ public class StorageService {
         if hasOngoingTransaction {
             transactionalStorage[identifierOfParentTransactions.count].begin()
         } else {
-            if identifierOfParentTransactions.count == 1 {
+            if transactionalStorage.last?.isCommited == true {
                 let newTransactionalStorage = TransactionalStorage(transacitonId: UUID().hashValue)
                 transactionalStorage.append(newTransactionalStorage)
                 identifierOfParentTransactions.append(identifierOfParentTransactions.count + 1)
@@ -99,6 +98,7 @@ public class StorageService {
         
         let currentTransaction = transactionalStorage[identifierOfParentTransactions.count]
         if currentTransaction.nestedTransaction == nil, !currentTransaction.isCommited {
+            transactionalStorage[identifierOfParentTransactions.count].rollback()
             transactionalStorage.removeLast()
             identifierOfParentTransactions.removeLast()
             return nil
@@ -171,9 +171,11 @@ class TransactionalStorage {
     
     fileprivate func rollback() {
         if let nestedTransaction = nestedTransaction, !nestedTransaction.isCommited {
+            if nestedTransaction.nestedTransaction == nil {
+                self.nestedTransaction = nil
+                return
+            }
             nestedTransaction.rollback()
-        } else {
-            nestedTransaction = nil
         }
     }
 }
