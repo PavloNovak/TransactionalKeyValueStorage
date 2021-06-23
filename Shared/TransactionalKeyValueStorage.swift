@@ -104,3 +104,61 @@ public class TransactionalKeyValueStorage {
         return nil
     }
 }
+
+/// V4
+public class StorageService {
+    
+    private static let genesisBlockValue = 0
+    
+    private var transactionalStorage = TransactionalStorage(transacitonId: StorageService.genesisBlockValue)
+    
+    /// Store the value for key into current transaction
+    public func set(_ key: String, _ value: String) {
+        transactionalStorage.set(key, value)
+    }
+    
+    /// Return the current value for key from current transaction
+    public func get(_ key: String) -> String? {
+        transactionalStorage.get(key)
+    }
+    
+    /// Remove the entry for key in current transaction
+    public func delete(_ key: String) {
+        transactionalStorage.delete(key)
+    }
+    
+    /// Return the number of keys that have the given value
+    public func count(_ value: String) -> Int {
+        transactionalStorage.count(value)
+    }
+}
+
+class TransactionalStorage {
+    let transactionId: Int
+    private var storage: Dictionary = [:]
+    var nextTransaction: TransactionalStorage?
+    
+    init(transacitonId: Int) {
+        self.transactionId = transacitonId
+    }
+    
+    fileprivate func set(_ key: String, _ value: String) {
+        storage[key] = value
+    }
+    
+    fileprivate func get(_ key: String) -> String? {
+        storage[key]
+    }
+    
+    fileprivate func delete(_ key: String) {
+        storage.removeValue(forKey: key)
+    }
+    
+    fileprivate func count(_ value: String) -> Int {
+        if let nextTransaction = nextTransaction {
+            return nextTransaction.count(value)
+        } else {
+            return storage.values.filter{ $0 == value }.count
+        }
+    }
+}

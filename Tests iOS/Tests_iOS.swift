@@ -11,7 +11,7 @@ class Tests_iOS: XCTestCase {
 
     func testSetAndGetValue() {
         // Arrange
-        var storage = TransactionalKeyValueStorage()
+        let storage = TransactionalKeyValueStorage()
         let expectedResult = "123"
 
         // Act
@@ -23,7 +23,7 @@ class Tests_iOS: XCTestCase {
     
     func testSetAndDeleteValue() {
         // Arrange
-        var storage = TransactionalKeyValueStorage()
+        let storage = TransactionalKeyValueStorage()
         storage.set("foo", "123")
         
         // Act
@@ -35,7 +35,7 @@ class Tests_iOS: XCTestCase {
     
     func testCountOfOccurences() {
         // Arrange
-        var storage = TransactionalKeyValueStorage()
+        let storage = TransactionalKeyValueStorage()
         storage.set("foo", "123")
         storage.set("bar", "456")
         storage.set("baz", "123")
@@ -54,7 +54,7 @@ class Tests_iOS: XCTestCase {
     
     func testCommitTransaction() {
         // Arrange
-        var storage = TransactionalKeyValueStorage()
+        let storage = TransactionalKeyValueStorage()
         let commitExpectedResponse: String? = nil
         let rollbackExpectedResponse: String? = "no transaction"
         let getFooExpectedResult = "456"
@@ -76,7 +76,7 @@ class Tests_iOS: XCTestCase {
     
     func testRollbackTransaction() {
         // Arrange
-        var storage = TransactionalKeyValueStorage()
+        let storage = TransactionalKeyValueStorage()
         let getFooExpectedResult = "456"
         let getBarExpectedResult = "def"
         let getFooAfterRollbackExpectedResult = "123"
@@ -112,7 +112,7 @@ class Tests_iOS: XCTestCase {
     
     func testNestedTransactions() {
         // Arrange
-        var storage = TransactionalKeyValueStorage()
+        let storage = TransactionalKeyValueStorage()
         let firstGetFooExpectedResult = "789"
         let secondGetFooExpectedResult = "456"
         let thirdGetFooExpectedResult = "123"
