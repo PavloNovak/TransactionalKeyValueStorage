@@ -114,7 +114,7 @@ final class TransactionalStorage {
     /// Child transaction
     public var nestedTransaction: TransactionalStorage?
     /// Indicates whether transaction is commited
-    public var isCommited: Bool = false
+    public private(set) var isCommited: Bool = false
     
     private let transactionId: Int
     private var storage: Dictionary = [:]
