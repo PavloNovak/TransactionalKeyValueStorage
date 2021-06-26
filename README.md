@@ -1,6 +1,13 @@
 # TransactionalKeyValueStorage
 
 TransactionalKeyValueStorage represents transactional key-value storage that can hold nested transactions. Interface does not depend on any third party library.
+UI interface to the service is done using SwiftUI.
+In order to use a service with UI:
+* Run project using Xcode
+* Select type of command you want to perform
+* Insert key and value separated by whitespace
+* Press return on your keyboard
+* In case if a command has any return value it will be displayed in an output above the textfield.
 
 ## Interface description
 
