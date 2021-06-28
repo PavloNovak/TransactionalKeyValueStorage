@@ -1,5 +1,7 @@
 # TransactionalKeyValueStorage
 
+https://www.notion.so/Transactional-Key-Value-Store-d72f26aa31e34eef9aa7442507215ce7
+
 TransactionalKeyValueStorage represents transactional key-value storage that can hold nested transactions. Interface does not depend on any third party library.
 UI interface to the service is done using SwiftUI.
 In order to use a service with UI:
